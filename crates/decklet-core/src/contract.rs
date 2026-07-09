@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
 use serde::Deserialize;
 
@@ -13,11 +13,8 @@ pub fn parse_scene_snapshot_contract(json: &str) -> Result<SceneSnapshot, Contra
             message: error.to_string(),
         })?;
 
-    match value
-        .get("schemaVersion")
-        .and_then(serde_json::Value::as_u64)
-    {
-        Some(1) => {}
+    match value.get("schemaVersion") {
+        Some(version) if version.as_u64() == Some(1) => {}
         Some(found) => {
             return Err(ContractError::UnsupportedSchemaVersion {
                 found: found.to_string(),
@@ -27,10 +24,13 @@ pub fn parse_scene_snapshot_contract(json: &str) -> Result<SceneSnapshot, Contra
     }
 
     let snapshot: WireSnapshot =
-        serde_json::from_value(value).map_err(|error| ContractError::InvalidJson {
+        serde_json::from_value(value).map_err(|error| ContractError::InvalidContract {
             message: error.to_string(),
         })?;
-    Ok(SceneSnapshot::new(snapshot.root.into_scene_node()?))
+    let mut keys = HashSet::new();
+    Ok(SceneSnapshot::new(
+        snapshot.root.into_scene_node(&mut keys)?,
+    ))
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,9 +42,24 @@ pub enum ContractError {
     UnsupportedSchemaVersion {
         found: String,
     },
+    InvalidContract {
+        message: String,
+    },
+    EmptyNodeKey,
+    DuplicateNodeKey {
+        key: String,
+    },
     MissingRequiredProp {
         component_type: &'static str,
         prop: &'static str,
+    },
+    UnexpectedProp {
+        component_type: &'static str,
+        prop: &'static str,
+    },
+    LeafNodeChildren {
+        component_type: &'static str,
+        key: String,
     },
 }
 
@@ -61,12 +76,36 @@ impl fmt::Display for ContractError {
                 f,
                 "unsupported scene snapshot contract schemaVersion: {found}"
             ),
+            Self::InvalidContract { message } => {
+                write!(f, "invalid scene snapshot contract shape: {message}")
+            }
+            Self::EmptyNodeKey => {
+                f.write_str("scene snapshot contract nodes require non-empty keys")
+            }
+            Self::DuplicateNodeKey { key } => write!(
+                f,
+                "scene snapshot contract node key appears more than once: {key}"
+            ),
             Self::MissingRequiredProp {
                 component_type,
                 prop,
             } => write!(
                 f,
                 "{component_type} scene snapshot contract node requires props.{prop}"
+            ),
+            Self::UnexpectedProp {
+                component_type,
+                prop,
+            } => write!(
+                f,
+                "{component_type} scene snapshot contract node does not accept props.{prop}"
+            ),
+            Self::LeafNodeChildren {
+                component_type,
+                key,
+            } => write!(
+                f,
+                "{component_type} scene snapshot contract node cannot have children: {key}"
             ),
         }
     }
@@ -93,12 +132,25 @@ struct WireNode {
 }
 
 impl WireNode {
-    fn into_scene_node(self) -> Result<SceneNode, ContractError> {
+    fn into_scene_node(self, keys: &mut HashSet<String>) -> Result<SceneNode, ContractError> {
+        if self.key.is_empty() {
+            return Err(ContractError::EmptyNodeKey);
+        }
+        if !keys.insert(self.key.clone()) {
+            return Err(ContractError::DuplicateNodeKey { key: self.key });
+        }
+        if !self.component_type.accepts_children() && !self.children.is_empty() {
+            return Err(ContractError::LeafNodeChildren {
+                component_type: self.component_type.as_str(),
+                key: self.key,
+            });
+        }
+
         let component = self.component_type.into_component(self.props)?;
         let children = self
             .children
             .into_iter()
-            .map(WireNode::into_scene_node)
+            .map(|node| node.into_scene_node(keys))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(SceneNode::new(self.key, component).with_children(children))
@@ -117,6 +169,10 @@ enum WireComponentType {
 }
 
 impl WireComponentType {
+    fn accepts_children(self) -> bool {
+        matches!(self, Self::Screen | Self::View | Self::List)
+    }
+
     fn as_str(self) -> &'static str {
         match self {
             Self::Screen => "screen",
@@ -129,6 +185,7 @@ impl WireComponentType {
     }
 
     fn into_component(self, props: WireProps) -> Result<Component, ContractError> {
+        props.validate_for(self)?;
         let WireProps {
             layout,
             visual,
@@ -184,6 +241,50 @@ struct WireProps {
     text: Option<String>,
     label: Option<String>,
     source: Option<String>,
+}
+
+impl WireProps {
+    fn validate_for(&self, component_type: WireComponentType) -> Result<(), ContractError> {
+        match component_type {
+            WireComponentType::Screen | WireComponentType::View | WireComponentType::List => {
+                self.reject_present(component_type, "text", self.text.as_ref())?;
+                self.reject_present(component_type, "label", self.label.as_ref())?;
+                self.reject_present(component_type, "source", self.source.as_ref())?;
+            }
+            WireComponentType::Text => {
+                self.reject_present(component_type, "focusable", self.focusable.as_ref())?;
+                self.reject_present(component_type, "label", self.label.as_ref())?;
+                self.reject_present(component_type, "source", self.source.as_ref())?;
+            }
+            WireComponentType::Button => {
+                self.reject_present(component_type, "text", self.text.as_ref())?;
+                self.reject_present(component_type, "source", self.source.as_ref())?;
+            }
+            WireComponentType::Image => {
+                self.reject_present(component_type, "focusable", self.focusable.as_ref())?;
+                self.reject_present(component_type, "text", self.text.as_ref())?;
+                self.reject_present(component_type, "label", self.label.as_ref())?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn reject_present<T>(
+        &self,
+        component_type: WireComponentType,
+        prop: &'static str,
+        value: Option<&T>,
+    ) -> Result<(), ContractError> {
+        if value.is_some() {
+            return Err(ContractError::UnexpectedProp {
+                component_type: component_type.as_str(),
+                prop,
+            });
+        }
+
+        Ok(())
+    }
 }
 
 fn required_text(
@@ -389,6 +490,175 @@ mod tests {
                 found: "2".to_owned()
             }
         );
+    }
+
+    #[test]
+    fn rejects_missing_schema_version_with_typed_error() {
+        let mut value = minimal_contract_value();
+        value.as_object_mut().unwrap().remove("schemaVersion");
+
+        assert_eq!(
+            parse_value(value).expect_err("missing schema version should fail"),
+            ContractError::MissingSchemaVersion
+        );
+    }
+
+    #[test]
+    fn rejects_non_numeric_schema_version_with_typed_error() {
+        let mut value = minimal_contract_value();
+        value["schemaVersion"] = serde_json::json!("1");
+
+        assert_eq!(
+            parse_value(value).expect_err("unsupported schema version should fail"),
+            ContractError::UnsupportedSchemaVersion {
+                found: "\"1\"".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_empty_keys_with_typed_error() {
+        let mut value = minimal_contract_value();
+        value["root"]["children"][0]["key"] = serde_json::json!("");
+
+        assert_eq!(
+            parse_value(value).expect_err("empty key should fail"),
+            ContractError::EmptyNodeKey
+        );
+    }
+
+    #[test]
+    fn rejects_duplicate_keys_globally() {
+        let mut value = minimal_contract_value();
+        value["root"]["children"][1]["key"] = serde_json::json!("title");
+
+        assert_eq!(
+            parse_value(value).expect_err("duplicate key should fail"),
+            ContractError::DuplicateNodeKey {
+                key: "title".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_fields() {
+        let mut value = minimal_contract_value();
+        value["root"]["unexpectedField"] = serde_json::json!(true);
+
+        let error = parse_value(value).expect_err("unknown field should fail");
+        assert!(matches!(error, ContractError::InvalidContract { .. }));
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn rejects_invalid_component_types() {
+        let mut value = minimal_contract_value();
+        value["root"]["children"][0]["type"] = serde_json::json!("slider");
+
+        let error = parse_value(value).expect_err("invalid component type should fail");
+        assert!(matches!(error, ContractError::InvalidContract { .. }));
+        assert!(error.to_string().contains("unknown variant"));
+    }
+
+    #[test]
+    fn rejects_malformed_props_for_component_type() {
+        let mut value = minimal_contract_value();
+        value["root"]["props"]["label"] = serde_json::json!("not allowed");
+
+        assert_eq!(
+            parse_value(value).expect_err("screen label prop should fail"),
+            ContractError::UnexpectedProp {
+                component_type: "screen",
+                prop: "label"
+            }
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_color_channel_values() {
+        let mut value = minimal_contract_value();
+        value["root"]["props"]["visual"]["background"]["r"] = serde_json::json!(300);
+
+        let error = parse_value(value).expect_err("invalid color should fail");
+        assert!(matches!(error, ContractError::InvalidContract { .. }));
+        assert!(error.to_string().contains("invalid value"));
+    }
+
+    #[test]
+    fn rejects_children_on_leaf_components() {
+        let mut value = minimal_contract_value();
+        value["root"]["children"][0]["children"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "key": "illegal-child",
+                "type": "text",
+                "props": {
+                    "layout": {
+                        "direction": "vertical",
+                        "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+                        "spacing": 0,
+                        "size": { "width": null, "height": 20 },
+                        "align": "stretch"
+                    },
+                    "visual": {
+                        "background": { "r": 0, "g": 0, "b": 0, "a": 0 },
+                        "foreground": { "r": 245, "g": 247, "b": 250, "a": 255 },
+                        "focusedBackground": null,
+                        "border": null
+                    },
+                    "text": "Child"
+                },
+                "children": []
+            }));
+
+        assert_eq!(
+            parse_value(value).expect_err("leaf children should fail"),
+            ContractError::LeafNodeChildren {
+                component_type: "text",
+                key: "title".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn accepts_only_tested_contract_defaults() {
+        let mut value = minimal_contract_value();
+        value["root"]["props"]
+            .as_object_mut()
+            .unwrap()
+            .remove("focusable");
+        value["root"]["props"]["visual"]
+            .as_object_mut()
+            .unwrap()
+            .remove("focusedBackground");
+        value["root"]["props"]["visual"]
+            .as_object_mut()
+            .unwrap()
+            .remove("border");
+        value["root"]["children"][1]["props"]
+            .as_object_mut()
+            .unwrap()
+            .remove("focusable");
+
+        let snapshot = parse_value(value).expect("tested defaults should parse");
+        let mut host = Host::new();
+        let scene = host
+            .ingest(snapshot, DEMO_VIEWPORT)
+            .expect("defaulted snapshot should ingest");
+
+        assert!(!scene.layout.root.focusable);
+        assert_eq!(scene.layout.root.visual.focused_background, None);
+        assert_eq!(scene.layout.root.visual.border, None);
+        assert_eq!(scene.focus_order, vec![NodeKey::from("primary-action")]);
+    }
+
+    fn minimal_contract_value() -> serde_json::Value {
+        serde_json::from_str(MINIMAL_CONTRACT).expect("minimal contract fixture is valid JSON")
+    }
+
+    fn parse_value(value: serde_json::Value) -> Result<SceneSnapshot, ContractError> {
+        parse_scene_snapshot_contract(&value.to_string())
     }
 
     const MINIMAL_CONTRACT: &str = r#"{
