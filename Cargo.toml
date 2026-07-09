@@ -1,6 +1,18 @@
-[package]
-name = "decklet"
+[workspace]
+members = [
+    "crates/decklet-core",
+    "crates/decklet-demo",
+    "crates/decklet-host-sdl",
+]
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
 
-[dependencies]
+[workspace.dependencies]
+decklet-core = { path = "crates/decklet-core" }
+decklet-host-sdl = { path = "crates/decklet-host-sdl" }
+libloading = "0.8"
+sdl2 = "0.38"

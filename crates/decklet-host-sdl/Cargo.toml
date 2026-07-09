@@ -1,0 +1,10 @@
+[package]
+name = "decklet-host-sdl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+decklet-core.workspace = true
+libloading.workspace = true
+sdl2.workspace = true
