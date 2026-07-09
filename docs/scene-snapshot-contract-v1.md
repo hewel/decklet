@@ -12,7 +12,19 @@ Each node uses this shape:
 {
   "key": "stable-node-key",
   "type": "screen",
-  "props": {},
+  "props": {
+    "layout": {
+      "direction": "vertical",
+      "padding": { "top": 0, "right": 0, "bottom": 0, "left": 0 },
+      "spacing": 0,
+      "size": { "width": 320, "height": 480 },
+      "align": "stretch"
+    },
+    "visual": {
+      "background": { "r": 26, "g": 31, "b": 40, "a": 255 },
+      "foreground": { "r": 245, "g": 247, "b": 250, "a": 255 }
+    }
+  },
   "children": []
 }
 ```

@@ -636,6 +636,14 @@ mod tests {
             .as_object_mut()
             .unwrap()
             .remove("border");
+        value["root"]["props"]["layout"]["size"]
+            .as_object_mut()
+            .unwrap()
+            .remove("width");
+        value["root"]["children"][1]["props"]["layout"]["size"]
+            .as_object_mut()
+            .unwrap()
+            .remove("height");
         value["root"]["children"][1]["props"]
             .as_object_mut()
             .unwrap()
@@ -650,6 +658,15 @@ mod tests {
         assert!(!scene.layout.root.focusable);
         assert_eq!(scene.layout.root.visual.focused_background, None);
         assert_eq!(scene.layout.root.visual.border, None);
+        assert_eq!(scene.layout.root.rect.width, DEMO_VIEWPORT.width);
+        assert_eq!(scene.layout.root.rect.height, DEMO_VIEWPORT.height);
+        assert_eq!(
+            scene
+                .layout
+                .find(&NodeKey::from("primary-action"))
+                .map(|node| node.rect.height),
+            Some(44)
+        );
         assert_eq!(scene.focus_order, vec![NodeKey::from("primary-action")]);
     }
 
