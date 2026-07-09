@@ -10,6 +10,8 @@ Decklet is not a browser, WebView, React DOM target, launcher, emulator frontend
 - `decklet-host-sdl`: SDL2 Canvas desktop/device host configuration, keyboard-to-gamepad input mapping, and SDL2_ttf text rendering.
 - `decklet-demo`: the 320x480 Runtime Capability Demo scene and binary.
 
+Future Guest App and QuickJS/TSX staging is documented in `docs/guest-app-staging.md`. The current visible demo remains Rust-built.
+
 ## Desktop Demo
 
 The desktop demo requires the SDL2 runtime library and SDL2_ttf runtime library. On Arch-based systems the SDL2_ttf package is typically `sdl2_ttf`.
