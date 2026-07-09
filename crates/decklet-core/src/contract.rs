@@ -653,6 +653,44 @@ mod tests {
         assert_eq!(scene.focus_order, vec![NodeKey::from("primary-action")]);
     }
 
+    #[test]
+    fn runtime_capability_demo_fixture_ingests_with_expected_contract_behavior() {
+        let snapshot =
+            parse_scene_snapshot_contract(RUNTIME_CAPABILITY_DEMO_CONTRACT).expect("demo fixture");
+        let mut host = Host::new();
+        let scene = host
+            .ingest(snapshot, DEMO_VIEWPORT)
+            .expect("demo fixture should ingest");
+
+        assert_eq!(scene.layout.root.rect, Rect::new(0, 0, 320, 480));
+        assert_eq!(
+            scene.focus_order,
+            vec![
+                NodeKey::from("menu-play"),
+                NodeKey::from("menu-settings"),
+                NodeKey::from("menu-debug"),
+                NodeKey::from("menu-power"),
+            ]
+        );
+        assert_eq!(scene.focused_key, Some(NodeKey::from("menu-play")));
+
+        let title = scene
+            .layout
+            .find(&NodeKey::from("demo-title"))
+            .expect("title is present");
+        assert_eq!(title.text.as_deref(), Some("Decklet Runtime"));
+        assert_eq!(title.rect, Rect::new(16, 20, 288, 26));
+
+        let first_button = scene
+            .layout
+            .find(&NodeKey::from("menu-play"))
+            .expect("first button is present");
+        assert_eq!(first_button.text.as_deref(), Some("Open Library"));
+        assert_eq!(first_button.rect, Rect::new(16, 92, 288, 44));
+        assert_eq!(first_button.visual.background, Color::PANEL);
+        assert_eq!(first_button.visual.focused_background, Some(Color::FOCUS));
+    }
+
     fn minimal_contract_value() -> serde_json::Value {
         serde_json::from_str(MINIMAL_CONTRACT).expect("minimal contract fixture is valid JSON")
     }
@@ -660,6 +698,9 @@ mod tests {
     fn parse_value(value: serde_json::Value) -> Result<SceneSnapshot, ContractError> {
         parse_scene_snapshot_contract(&value.to_string())
     }
+
+    const RUNTIME_CAPABILITY_DEMO_CONTRACT: &str =
+        include_str!("../fixtures/runtime-capability-demo.v1.json");
 
     const MINIMAL_CONTRACT: &str = r#"{
       "schemaVersion": 1,

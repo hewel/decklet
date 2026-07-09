@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "root": {
+    "key": "demo-root",
+    "type": "screen",
+    "props": {
+      "layout": {
+        "direction": "vertical",
+        "padding": {
+          "top": 20,
+          "right": 16,
+          "bottom": 16,
+          "left": 16
+        },
+        "spacing": 12,
+        "size": {
+          "width": 320,
+          "height": 480
+        },
+        "align": "stretch"
+      },
+      "visual": {
+        "background": {
+          "r": 26,
+          "g": 31,
+          "b": 40,
+          "a": 255
+        },
+        "foreground": {
+          "r": 245,
+          "g": 247,
+          "b": 250,
+          "a": 255
+        }
+      }
+    },
+    "children": [
+      {
+        "key": "demo-title",
+        "type": "text",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 26
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 0,
+              "g": 0,
+              "b": 0,
+              "a": 0
+            },
+            "foreground": {
+              "r": 245,
+              "g": 247,
+              "b": 250,
+              "a": 255
+            }
+          },
+          "text": "Decklet Runtime"
+        },
+        "children": []
+      },
+      {
+        "key": "demo-subtitle",
+        "type": "text",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 22
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 0,
+              "g": 0,
+              "b": 0,
+              "a": 0
+            },
+            "foreground": {
+              "r": 151,
+              "g": 163,
+              "b": 178,
+              "a": 255
+            }
+          },
+          "text": "320x480 native Host demo"
+        },
+        "children": []
+      },
+      {
+        "key": "menu-play",
+        "type": "button",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 44
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 37,
+              "g": 45,
+              "b": 57,
+              "a": 255
+            },
+            "foreground": {
+              "r": 245,
+              "g": 247,
+              "b": 250,
+              "a": 255
+            },
+            "focusedBackground": {
+              "r": 46,
+              "g": 125,
+              "b": 172,
+              "a": 255
+            },
+            "border": {
+              "r": 255,
+              "g": 255,
+              "b": 255,
+              "a": 38
+            }
+          },
+          "focusable": true,
+          "label": "Open Library"
+        },
+        "children": []
+      },
+      {
+        "key": "menu-settings",
+        "type": "button",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 44
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 37,
+              "g": 45,
+              "b": 57,
+              "a": 255
+            },
+            "foreground": {
+              "r": 245,
+              "g": 247,
+              "b": 250,
+              "a": 255
+            },
+            "focusedBackground": {
+              "r": 46,
+              "g": 125,
+              "b": 172,
+              "a": 255
+            },
+            "border": {
+              "r": 255,
+              "g": 255,
+              "b": 255,
+              "a": 38
+            }
+          },
+          "focusable": true,
+          "label": "Settings"
+        },
+        "children": []
+      },
+      {
+        "key": "menu-debug",
+        "type": "button",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 44
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 37,
+              "g": 45,
+              "b": 57,
+              "a": 255
+            },
+            "foreground": {
+              "r": 245,
+              "g": 247,
+              "b": 250,
+              "a": 255
+            },
+            "focusedBackground": {
+              "r": 46,
+              "g": 125,
+              "b": 172,
+              "a": 255
+            },
+            "border": {
+              "r": 255,
+              "g": 255,
+              "b": 255,
+              "a": 38
+            }
+          },
+          "focusable": true,
+          "label": "Debug Panel"
+        },
+        "children": []
+      },
+      {
+        "key": "menu-power",
+        "type": "button",
+        "props": {
+          "layout": {
+            "direction": "vertical",
+            "padding": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0
+            },
+            "spacing": 0,
+            "size": {
+              "width": null,
+              "height": 44
+            },
+            "align": "stretch"
+          },
+          "visual": {
+            "background": {
+              "r": 37,
+              "g": 45,
+              "b": 57,
+              "a": 255
+            },
+            "foreground": {
+              "r": 245,
+              "g": 247,
+              "b": 250,
+              "a": 255
+            },
+            "focusedBackground": {
+              "r": 46,
+              "g": 125,
+              "b": 172,
+              "a": 255
+            },
+            "border": {
+              "r": 255,
+              "g": 255,
+              "b": 255,
+              "a": 38
+            }
+          },
+          "focusable": true,
+          "label": "Power Options"
+        },
+        "children": []
+      }
+    ]
+  }
+}
