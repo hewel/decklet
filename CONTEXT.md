@@ -20,6 +20,10 @@ _Avoid_: Web app, page, launcher entry
 A declarative tree of native UI intent sent from a Guest App to the Host after app state changes.
 _Avoid_: DOM tree, draw command stream, virtual DOM
 
+**Scene Snapshot Contract**:
+The strict, versioned serialized v1 boundary shape that a future Guest App must emit before the Host converts it into a native Scene Snapshot.
+_Avoid_: Host internals, retained scene state, layout tree, renderer API
+
 **Focus Model**:
 The Host-owned D-pad navigation model over stable, guest-keyed focusable nodes.
 _Avoid_: Tab order, browser focus, raw input handling
