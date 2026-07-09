@@ -1,5 +1,8 @@
 use std::fmt;
 
+pub mod contract;
+pub use contract::{ContractError, parse_scene_snapshot_contract};
+
 pub const DEMO_WIDTH: u32 = 320;
 pub const DEMO_HEIGHT: u32 = 480;
 pub const DEMO_VIEWPORT: Size = Size {
